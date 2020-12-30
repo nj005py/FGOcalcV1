@@ -44,6 +44,7 @@
         <item>蓝卡NP获取降序</item>
         <item>绿卡NP获取升序</item>
         <item>绿卡NP获取降序</item>
+        <item>宝具hits数</item>
     </string-array>
 
     <string-array name="order_type_value">
@@ -63,6 +64,7 @@
         <item>arts_na,desc,multi_arts</item>
         <item>quick_na,asc,multi_quick</item>
         <item>quick_na,desc,multi_quick</item>
+        <item>np_hit,desc</item>
     </string-array>
 
     <string-array name="np_classification">
