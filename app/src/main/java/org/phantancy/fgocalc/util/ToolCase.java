@@ -28,6 +28,8 @@ import android.widget.TextView;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.phantancy.fgocalc.R;
 import org.phantancy.fgocalc.dialog.TipDialog;
 import org.phantancy.fgocalc.item.ServantItem;
@@ -576,4 +578,13 @@ public class ToolCase {
         }
     }
 
+    //获取jsoup doc
+    public static Document getDocument(String url) {
+        try {
+            Document doc = Jsoup.connect(url).get();
+            return doc;
+        } catch (IOException e) {
+            return null;
+        }
+    }
 }

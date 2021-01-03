@@ -41,7 +41,7 @@
 
         <item
             android:id="@+id/nsm_download_database_extra"
-            android:title="更新数据库"/>
+            android:title="检查数据库更新"/>
 
         <item
             android:id="@+id/nsm_fgotool"

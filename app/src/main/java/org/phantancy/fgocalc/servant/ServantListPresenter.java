@@ -13,8 +13,6 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.util.Log;
@@ -23,30 +21,37 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Toast;
 
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
+
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.phantancy.fgocalc.R;
 
 import org.phantancy.fgocalc.activity.PartyActy;
+import org.phantancy.fgocalc.common.UrlConstant;
 import org.phantancy.fgocalc.database.DBManager;
 import org.phantancy.fgocalc.dialog.FeedbackDialog;
 import org.phantancy.fgocalc.dialog.LoadingDialog;
 import org.phantancy.fgocalc.item.FilterItem;
-import org.phantancy.fgocalc.item.OptionItem;
+import org.phantancy.fgocalc.item.RemoteVersionItem;
 import org.phantancy.fgocalc.item.ServantItem;
 import org.phantancy.fgocalc.item.TipItem;
-import org.phantancy.fgocalc.item.UpdateItem;
 import org.phantancy.fgocalc.util.BaseUtils;
 import org.phantancy.fgocalc.util.SharedPreferencesUtils;
 import org.phantancy.fgocalc.util.ToolCase;
 
 import java.io.File;
 import java.io.Serializable;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static org.phantancy.fgocalc.util.ToolCase.notEmpty;
 
@@ -58,15 +63,16 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     private Context ctx;
     private Activity acty;
     private final String TAG = getClass().getSimpleName();
-    private int curDbVersion;//当前版本号
-    private int cacheDbVersion;//缓存版本号
+//    private int remoteDbVersion;//远端数据库
+//    private int localDbVersion;//本地数据库
     private String databaseExtraUrl = "https://gitee.com/nj005py/fgocalc/raw/master/servants.db";
-    private int locVersion;
-    private int netVersion;//当前最新app版本号
-    private int ignVersion;//忽略版本号
-    private String update;//更新文本
+    //本地版本号
+//    private int localVersion;
+    //当前最新app版本号
+//    private int remoteVersion;
+    //忽略版本号
+//    private int ignoreVersion;
     private String keyWord;
-    //    private DBManager dbManager;
     private List<ServantItem> servantList = new ArrayList<>();
     private ServantItem sItem;//吧刊组
     private ServantItem pItem;//空谕
@@ -83,36 +89,38 @@ public class ServantListPresenter implements ServantListContract.Presenter {
 
     private final int CHECK_APP_UPDATE = 1;//检查更新完毕
 
-    private Handler mHandler = new Handler(new Handler.Callback() {
-        @Override
-        public boolean handleMessage(Message msg) {
-            switch (msg.what) {
-                case CHECK_APP_UPDATE:
-                    if ((msg.obj != null) && (msg.obj instanceof  UpdateItem)) {
-                        UpdateItem updateItem = (UpdateItem)msg.obj;
-                        netVersion = updateItem.getVersionCode();
-                        if (netVersion != 0 && locVersion != 0) {
-                            //判断当前版本是否是忽略版本
-                            ignVersion = (int) SharedPreferencesUtils.getParam(ctx, "ignVersion", 0);
-                            if (ignVersion != netVersion) {
-                                //比较版本号
-                                if (netVersion > locVersion) {
-                                    //升级弹框
-                                    mView.showUpdateDiag(updateItem);
-                                } else {
-                                    if (isManual) {
-                                        isManual = false;
-                                        ToolCase.showTip(ctx, "tip_app_already_lastest.json");
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    break;
-            }
-            return true;
-        }
-    });
+//    private Handler mHandler = new Handler(new Handler.Callback() {
+//        @Override
+//        public boolean handleMessage(Message msg) {
+//            switch (msg.what) {
+//                case CHECK_APP_UPDATE:
+//                    if ((msg.obj != null) && (msg.obj instanceof  UpdateItem)) {
+//                        UpdateItem updateItem = (UpdateItem)msg.obj;
+//                        remoteVersion = updateItem.getVersionCode();
+//                        if (remoteVersion != 0 && localVersion != 0) {
+//                            //判断当前版本是否是忽略版本
+//                            ignoreVersion = (int) SharedPreferencesUtils.getParam(ctx, "ignVersion", 0);
+//                            if (ignoreVersion != remoteVersion) {
+//                                //比较版本号
+//                                if (remoteVersion > localVersion) {
+//                                    //升级弹框
+//                                    mView.showUpdateDiag(updateItem);
+//                                } else {
+//                                    if (isManual) {
+//                                        isManual = false;
+//                                        ToolCase.showTip(ctx, "tip_app_already_lastest.json");
+//                                    }
+//                                }
+//                            }
+//                        }
+//                    }
+//                    break;
+//            }
+//            return true;
+//        }
+//    });
+    //更新检查用
+    ExecutorService executor = Executors.newCachedThreadPool();
 
     @NonNull
     private final ServantListContract.View mView;
@@ -139,14 +147,9 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     public void simpleCheck(Context ctx, Activity acty) {
         this.ctx = ctx;
         this.acty = acty;
-        cacheDbVersion = (int) SharedPreferencesUtils.getParam(ctx, "dbVersion", 1);
         checkAppUpdate(false);//是否人工检测更新？否
         //判断本地数据库有无更新
-        if (checkDatabase(ctx)) {
-            File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
-            dbFile.delete();
-            ToolCase.showTip(ctx, "tip_database_update_success.json");
-        }
+        handleLocalDbUpdate();
         //实装末端servant
         //吧刊组
         sItem = new ServantItem();
@@ -223,56 +226,96 @@ public class ServantListPresenter implements ServantListContract.Presenter {
 
     @Override
     public void downloadDatabaseExtra() {
-        //判断本地与远端数据库版本号
-        int locVer = (int) SharedPreferencesUtils.getParam(ctx, "dbVersion", 0);
-        String remote = (String) SharedPreferencesUtils.getParam(ctx, "remoteDb", "");
-        if (locVer != 0 && !TextUtils.isEmpty(remote)) {
-            int remoteVer = Integer.valueOf(remote);
-            if (remoteVer > locVer) {
-                File configFile = new File(Environment.getExternalStoragePublicDirectory("Download") + "/servants.db");
-                if (configFile.exists()) {
-                    configFile.delete();
-                    Log.d(TAG, "数据库文件存在，删除配置文件");
-                }
-                //注册广播接收器
-                IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-                ctx.registerReceiver(receiver, filter);
-                isReceiverRegister = true;
-                //创建下载任务,downloadUrl就是下载链接
-                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(databaseExtraUrl));
-                //指定下载路径和下载文件名
-                request.setDestinationInExternalPublicDir("Download", "/servants.db");
-                //获取下载管理器
-                DownloadManager downloadManager = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
-                //将下载任务加入下载队列，否则不会进行下载
-                downloadManager.enqueue(request);
-            } else {
-                ToolCase.showTip(ctx, "tip_database_already_lastest.json");
-            }
-        } else {
-            ToolCase.showTip(ctx, "tip_database_already_lastest.json");
-        }
+        /**
+         * 1获取本地数据库版本
+         * 2获取远端数据库版本
+         * 3对比数据库版本号
+         * 4下载数据库
+         * 5加载数据库
+         */
+//        //1 获取本地数据库版本
+//        int locVer = (int) SharedPreferencesUtils.getParam(ctx, "dbVersion", 0);
+//        //2
+//        String remote = (String) SharedPreferencesUtils.getParam(ctx, "remoteDb", "");
+//        //3 判断本地与远端数据库版本号
+//        if (locVer != 0 && !TextUtils.isEmpty(remote)) {
+//            int remoteVer = Integer.valueOf(remote);
+//            if (remoteVer > locVer) {
+//                File configFile = new File(Environment.getExternalStoragePublicDirectory("Download") + "/servants.db");
+//                if (configFile.exists()) {
+//                    configFile.delete();
+//                    Log.d(TAG, "数据库文件存在，删除配置文件");
+//                }
+//                //注册广播接收器
+//                IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+//                ctx.registerReceiver(receiver, filter);
+//                isReceiverRegister = true;
+//                //创建下载任务,downloadUrl就是下载链接
+//                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(databaseExtraUrl));
+//                //指定下载路径和下载文件名
+//                request.setDestinationInExternalPublicDir("Download", "/servants.db");
+//                //获取下载管理器
+//                DownloadManager downloadManager = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
+//                //将下载任务加入下载队列，否则不会进行下载
+//                downloadManager.enqueue(request);
+//            } else {
+//                ToolCase.showTip(ctx, "tip_database_already_lastest.json");
+//            }
+//        } else {
+//            ToolCase.showTip(ctx, "tip_database_already_lastest.json");
+//        }
+        handleDbUpdate();
     }
 
     //检查数据库版本
-    public boolean checkDatabase(Context ctx) {
-        //获取配置文件
-        String json = ToolCase.loadJsonFromAsset(ctx,"database.json");
-        //json解析
+    public void handleDbUpdate() {
+        Future<RemoteVersionItem> future = getRemoteVersionItem();
+        int localDbVersion = getDbVersion();
+        RemoteVersionItem remoteVersionItem = null;
         try {
-            JSONObject jo = new JSONObject(json);
-            //获取当前版本号
-            curDbVersion = jo.optInt("version",0);
-            //与缓存版本号对比
-            if (cacheDbVersion != curDbVersion) {
-                SharedPreferencesUtils.setParam(ctx, "dbVersion", curDbVersion);
-                //需要更新
-                return true;
-            }
-        } catch (JSONException e) {
+            remoteVersionItem = future.get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
             e.printStackTrace();
         }
-        return false;
+        int remoteDbVersion = remoteVersionItem.getDb();
+        if (remoteDbVersion > localDbVersion) {
+            File configFile = new File(Environment.getExternalStoragePublicDirectory("Download") + "/servants.db");
+            if (configFile.exists()) {
+                configFile.delete();
+                Log.d(TAG, "数据库文件存在，删除配置文件");
+            }
+            //注册广播接收器
+            IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+            ctx.registerReceiver(receiver, filter);
+            isReceiverRegister = true;
+            //创建下载任务,downloadUrl就是下载链接
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(databaseExtraUrl));
+            //指定下载路径和下载文件名
+            request.setDestinationInExternalPublicDir("Download", "/servants.db");
+            //获取下载管理器
+            DownloadManager downloadManager = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
+            //将下载任务加入下载队列，否则不会进行下载
+            downloadManager.enqueue(request);
+        } else {
+            ToolCase.showTip(ctx, "tip_database_already_lastest.json");
+        }
+
+    }
+
+    //处理本地数据库更新
+    private void handleLocalDbUpdate() {
+        //上一个版本
+        int lastVersion = (int) SharedPreferencesUtils.getParam(ctx, "dbVersion", 1);
+        //json存的文件版本
+        int jsonVersion = getDbVersion();
+        if (lastVersion > jsonVersion) {
+            SharedPreferencesUtils.setParam(ctx, "dbVersion", jsonVersion);
+            File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
+            dbFile.delete();
+            ToolCase.showTip(ctx, "tip_database_update_success.json");
+        }
     }
 
 
@@ -303,43 +346,79 @@ public class ServantListPresenter implements ServantListContract.Presenter {
         }
     }
 
+    //获取本地db版本
+    private int getDbVersion() {
+        //获取配置文件
+        String json = ToolCase.loadJsonFromAsset(ctx,"database.json");
+        int remoteDbVersion = 0;
+        //json解析
+        try {
+            JSONObject jo = new JSONObject(json);
+            //获取当前版本号
+            remoteDbVersion = jo.optInt("version",0);
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        return remoteDbVersion;
+    }
+
     @Override
     public void checkAppUpdate(boolean isManual) {
         this.isManual = isManual;
-        locVersion = getVersionCode();//获取本地版本号
         //判断网络是否可用
         if (BaseUtils.isNetworkAvailable(ctx)) {
-            new Thread(new Runnable() {
-                @Override
-                public void run() {
-                    final String checkUrl = "http://nj005py.gitee.io/fgocalc/version";
-                    UpdateItem item = null;
-                    try {
-                        item = new UpdateItem();
-                        //从一个URL加载一个Document对象。
-                        Document doc = Jsoup.connect(checkUrl).get();
-                        Element eVer = doc.getElementById("version");
-                        Element eVerCode = doc.getElementById("version_code");
-                        Element eUrl = doc.getElementById("url");
-                        Element eCon = doc.getElementById("content");
-                        Element eDb = doc.getElementById("db");
+            handleAppUpdate();
+        }
+    }
 
-                        item.setVersion(eVer.text());
-                        item.setVersionCode(Integer.valueOf(eVerCode.text()));
-                        item.setUrl(eUrl.text());
-                        item.setContent(eCon.text());
-                        item.setCheckUrl(checkUrl);
+    //获取远端版本信息
+    private Future<RemoteVersionItem> getRemoteVersionItem() {
 
-                        SharedPreferencesUtils.setParam(ctx, "remoteDb", eDb.text());
-                        Message msg = new Message();
-                        msg.what = CHECK_APP_UPDATE;
-                        msg.obj = item;
-                        mHandler.sendMessage(msg);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
+        Document doc = ToolCase.getDocument(UrlConstant.APP_UPDATE);
+        if (doc == null) {
+            Log.d(TAG,"更新文件获取失败");
+        }
+        String json = doc.text();
+        Gson gson = new Gson();
+        Type type = (new TypeToken<RemoteVersionItem>(){}).getType();
+        final RemoteVersionItem item = gson.fromJson(json,type);
+        Future<RemoteVersionItem> future = executor.submit(new Callable<RemoteVersionItem>() {
+            @Override
+            public RemoteVersionItem call() throws Exception {
+                return item;
+            }
+        });
+        return future;
+    }
+
+    //检查app更新
+    private void handleAppUpdate() {
+        Future<RemoteVersionItem> future = getRemoteVersionItem();
+        int localVersion = getVersionCode();
+        RemoteVersionItem remoteVersionItem = null;
+        try {
+            remoteVersionItem = future.get();
+        } catch (ExecutionException e) {
+            e.printStackTrace();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        int remoteVersion = remoteVersionItem.getVersionCode();
+        if (remoteVersion != 0 && localVersion != 0) {
+            //判断当前版本是否是忽略版本
+            int ignoreVersion = (int) SharedPreferencesUtils.getParam(ctx, "ignVersion", 0);
+            if (ignoreVersion != remoteVersion) {
+                //比较版本号
+                if (remoteVersion > localVersion) {
+                    //升级弹框
+                    mView.showUpdateDiag(remoteVersionItem);
+                } else {
+//                    if (isManual) {
+//                        isManual = false;
+//                    }
+                    ToolCase.showTip(ctx, "tip_app_already_lastest.json");
                 }
-            }).start();
+            }
         }
     }
 

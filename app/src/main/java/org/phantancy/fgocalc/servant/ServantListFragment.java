@@ -54,6 +54,7 @@ import org.phantancy.fgocalc.dialog.AboutDialog;
 import org.phantancy.fgocalc.dialog.MenulLocDialog;
 import org.phantancy.fgocalc.dialog.UpdateDialog;
 import org.phantancy.fgocalc.event.DatabaseEvent;
+import org.phantancy.fgocalc.item.RemoteVersionItem;
 import org.phantancy.fgocalc.item.ServantItem;
 import org.phantancy.fgocalc.item.TipItem;
 import org.phantancy.fgocalc.item.UpdateItem;
@@ -371,6 +372,7 @@ public class ServantListFragment extends BaseFrag implements
                         //ctrl + alt + b直接跳到实现方法
                         mPresenter.reloadDatabase();
                         break;
+                        //下载远端数据库
                     case R.id.nsm_download_database_extra:
                         //判断有无写入权限
                         if (ContextCompat.checkSelfPermission(ctx, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED ||
@@ -499,29 +501,25 @@ public class ServantListFragment extends BaseFrag implements
     }
 
     @Override
-    public void showUpdateDiag(final UpdateItem updateItem) {
+    public void showUpdateDiag(final RemoteVersionItem item) {
         final UpdateDialog up = new UpdateDialog(ctx);
-        if (updateItem != null) {
-            up.setUpdate(updateItem);
+        if (item != null) {
+            up.setUpdate(item);
         }
         up.setDownloadListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Intent intent = new Intent();
                 intent.setAction("android.intent.action.VIEW");
-                Uri content_url = Uri.parse(updateItem.getUrl());
+                Uri content_url = Uri.parse(item.getUrl());
                 intent.setData(content_url);
                 startActivity(intent);
             }
         });
-        up.setIgnoreListener(new CompoundButton.OnCheckedChangeListener() {
+        up.setIgnoreListener(new View.OnClickListener() {
             @Override
-            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                if (isChecked) {
-                    SharedPreferencesUtils.setParam(ctx, "ignVersion", updateItem.getVersionCode());
-                } else {
-                    SharedPreferencesUtils.setParam(ctx, "ignVersion", 0);
-                }
+            public void onClick(View v){
+                SharedPreferencesUtils.setParam(ctx, "ignVersion", item.getVersionCode());
             }
         });
         up.show();

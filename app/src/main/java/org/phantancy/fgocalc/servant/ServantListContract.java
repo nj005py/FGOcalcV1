@@ -6,6 +6,7 @@ import android.content.Context;
 import org.phantancy.fgocalc.base.BasePresenter;
 import org.phantancy.fgocalc.base.BaseView;
 import org.phantancy.fgocalc.item.FilterItem;
+import org.phantancy.fgocalc.item.RemoteVersionItem;
 import org.phantancy.fgocalc.item.ServantItem;
 import org.phantancy.fgocalc.item.UpdateItem;
 
@@ -20,7 +21,7 @@ public interface ServantListContract {
     interface View extends BaseView<Presenter> {
         void showMenuLocDialog();
         void showAboutDialog();
-        void showUpdateDiag(UpdateItem updateItem);
+        void showUpdateDiag(RemoteVersionItem item);
         void setServantList(List<ServantItem> list);
     }
 
