@@ -40,12 +40,8 @@ public class RemoteVersionItem {
 
     public String getIntro() {
         StringBuilder sb = new StringBuilder()
-                .append("version:")
-                .append(version)
-                .append("\nversionCode:")
-                .append(versionCode)
-                .append("\ndb:")
-                .append(db);
+                .append("发现版本:")
+                .append(version);
         return sb.toString();
     }
 

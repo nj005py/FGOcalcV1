@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.graphics.Path;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -51,8 +52,10 @@ import org.phantancy.fgocalc.adapter.FilterAdapter;
 import org.phantancy.fgocalc.adapter.ServantCardViewAdapter;
 import org.phantancy.fgocalc.base.BaseFrag;
 import org.phantancy.fgocalc.dialog.AboutDialog;
+import org.phantancy.fgocalc.dialog.CharacterDialog;
 import org.phantancy.fgocalc.dialog.MenulLocDialog;
 import org.phantancy.fgocalc.dialog.UpdateDialog;
+import org.phantancy.fgocalc.entity.CharacterEntity;
 import org.phantancy.fgocalc.event.DatabaseEvent;
 import org.phantancy.fgocalc.item.RemoteVersionItem;
 import org.phantancy.fgocalc.item.ServantItem;
@@ -66,6 +69,7 @@ import org.phantancy.fgocalc.util.ToastUtils;
 import org.phantancy.fgocalc.util.ToolCase;
 import org.phantancy.fgocalc.view.ClearEditText;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import butterknife.BindView;
@@ -520,9 +524,48 @@ public class ServantListFragment extends BaseFrag implements
             @Override
             public void onClick(View v){
                 SharedPreferencesUtils.setParam(ctx, "ignVersion", item.getVersionCode());
+                up.dismiss();
             }
         });
         up.show();
+
+//        CharacterEntity en = new CharacterEntity();
+//        en.img = R.drawable.fg_arcueid;
+//        en.content = item.getIntro();
+//        //取消
+//        CharacterEntity.OptionEntity opCancel = new CharacterEntity.OptionEntity();
+//        opCancel.text = "取消";
+//        opCancel.characterInterface = new CharacterEntity.CharacterInterface() {
+//            @Override
+//            public void onClick() {
+//
+//            }
+//        };
+//        //看看
+//        CharacterEntity.OptionEntity opDownload = new CharacterEntity.OptionEntity();
+//        opDownload.text = "让我康康";
+//        opDownload.characterInterface = new CharacterEntity.CharacterInterface() {
+//            @Override
+//            public void onClick() {
+//                Intent intent = new Intent();
+//                intent.setAction("android.intent.action.VIEW");
+//                Uri content_url = Uri.parse(item.getUrl());
+//                intent.setData(content_url);
+//                startActivity(intent);
+//            }
+//        };
+//        List<CharacterEntity.OptionEntity> ops = new ArrayList<>();
+//        ops.add(opCancel);
+//        ops.add(opDownload);
+//        en.options = ops;
+//        DisplayMetrics metrics = new DisplayMetrics();
+//        mActy.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+//        int width = metrics.widthPixels;
+//        int height = metrics.heightPixels;
+////
+//        CharacterDialog cd = new CharacterDialog(ctx, R.style.dialog,en);
+//        cd.getWindow().setLayout((int) (width * 1), (int) (height * 0.8));
+//        cd.show();
     }
 
     @Override

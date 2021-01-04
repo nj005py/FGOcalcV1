@@ -1,55 +1,50 @@
 <android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <ImageView
-        android:id="@+id/dt_iv_character"
-        android:layout_width="wrap_content"
+        android:id="@+id/iv_character"
+        android:layout_width="400dp"
         android:layout_height="400dp"
-        android:adjustViewBounds="true"
-        android:scaleType="fitEnd"
-        android:src="@drawable/altria_alter_a"
-        android:visibility="gone"
-        app:layout_constraintBottom_toTopOf="@+id/dt_sv_tip"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
-
-    <ScrollView
-        android:id="@+id/dt_sv_tip"
-        android:layout_width="0dp"
-        android:layout_height="60dp"
-        android:padding="10dp"
-        android:background="@drawable/chat_bg"
-        app:layout_constraintTop_toBottomOf="@+id/dt_iv_character"
+        android:src="@drawable/fg_arcueid"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        android:visibility="gone">
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBottom_toBottomOf="parent"
+        android:visibility="visible"/>
 
-        <LinearLayout
+    <ScrollView
+        android:id="@+id/sv_tip"
+        android:layout_width="0dp"
+        android:layout_height="60dp"
+        app:layout_constraintBottom_toBottomOf="@+id/iv_character"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="parent"
+        android:visibility="visible">
+
+        <android.support.constraint.ConstraintLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent">
 
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/chat_bg"
+                />
+
             <TextView
-                android:id="@+id/dt_tv_tip"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
+                android:padding="10dp"
                 android:gravity="start"
                 android:text="超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--超长文本测试--"
-                android:textColor="@color/colorWhite"/>
+                android:textColor="@color/colorWhite"
+                app:layout_constraintTop_toTopOf="parent"
+                />
 
-        </LinearLayout>
+        </android.support.constraint.ConstraintLayout>
 
     </ScrollView>
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/dt_rv_options"
-        android:layout_width="0dp"
-        android:layout_height="match_parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toRightOf="parent"
-        android:visibility="gone"/>
 
 </android.support.constraint.ConstraintLayout>

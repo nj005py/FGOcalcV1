@@ -9,5 +9,6 @@
     <item name="item_delete_id" type="id"/>
     <!-- MemberTimeItemView中动态图片引所值 -->
     <item name="item_gridView_index" type="id"/>
+    <item name="tv_tip" type="id" />
 
 </resources>

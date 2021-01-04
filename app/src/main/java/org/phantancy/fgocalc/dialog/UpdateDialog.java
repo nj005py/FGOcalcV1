@@ -6,6 +6,8 @@ import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.view.View;
 import android.view.Window;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import org.phantancy.fgocalc.R;
@@ -32,6 +34,10 @@ public class UpdateDialog extends Dialog {
     TextView duTvDownload;
     @BindView(R.id.du_tv_intro)
     TextView duTvIntro;
+    @BindView(R.id.iv_character)
+    ImageView ivCharacter;
+    @BindView(R.id.ll_options)
+    LinearLayout llOptions;
     private Context mContext;
 
     public UpdateDialog(@NonNull Context context) {

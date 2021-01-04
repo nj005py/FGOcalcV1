@@ -21,7 +21,7 @@ import org.phantancy.fgocalc.util.ToolCase;
 import org.phantancy.fgocalc.view.OptionDecoration;
 
 import java.util.List;
-
+//带人物立绘的弹窗
 public class TipDialog extends Dialog {
     private Context ctx;
     private TextView tvTip;
