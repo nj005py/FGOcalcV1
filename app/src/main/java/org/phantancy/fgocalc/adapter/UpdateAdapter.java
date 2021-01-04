@@ -13,6 +13,7 @@ import org.phantancy.fgocalc.R;
 import org.phantancy.fgocalc.item.RemoteVersionItem;
 
 import butterknife.BindView;
+import butterknife.ButterKnife;
 
 public class UpdateAdapter extends ListAdapter<RemoteVersionItem.ContentBean, UpdateAdapter.ViewHolder> {
     public static DiffUtil.ItemCallback<RemoteVersionItem.ContentBean> diff = new DiffUtil.ItemCallback<RemoteVersionItem.ContentBean>() {
@@ -50,6 +51,7 @@ public class UpdateAdapter extends ListAdapter<RemoteVersionItem.ContentBean, Up
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+            ButterKnife.bind(this,itemView);
         }
 
         public void bindView(RemoteVersionItem.ContentBean x) {
