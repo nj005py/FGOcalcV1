@@ -7,7 +7,7 @@ android {
         applicationId "org.phantancy.fgocalc"
         minSdkVersion 21
         targetSdkVersion 26
-        versionCode 47
+        versionCode 46
         versionName "1.8.9"
         // Enabling multidex support.
         multiDexEnabled false
@@ -113,4 +113,7 @@ dependencies {
     api 'org.greenrobot:eventbus:3.1.1'
     //有提示的seekbar
     implementation 'com.xw.repo:bubbleseekbar:3.19-lite'
+    //rxjava
+    implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
+    implementation 'io.reactivex.rxjava2:rxjava:2.2.8'
 }

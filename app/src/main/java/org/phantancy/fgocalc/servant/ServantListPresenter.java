@@ -14,7 +14,6 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Environment;
 import android.support.annotation.NonNull;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Display;
 import android.view.Window;
@@ -41,17 +40,25 @@ import org.phantancy.fgocalc.item.TipItem;
 import org.phantancy.fgocalc.util.BaseUtils;
 import org.phantancy.fgocalc.util.SharedPreferencesUtils;
 import org.phantancy.fgocalc.util.ToolCase;
+import org.reactivestreams.Subscription;
 
 import java.io.File;
 import java.io.Serializable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.FlowableEmitter;
+import io.reactivex.FlowableOnSubscribe;
+import io.reactivex.FlowableSubscriber;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.schedulers.Schedulers;
 
 import static org.phantancy.fgocalc.util.ToolCase.notEmpty;
 
@@ -63,7 +70,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     private Context ctx;
     private Activity acty;
     private final String TAG = getClass().getSimpleName();
-//    private int remoteDbVersion;//远端数据库
+    //    private int remoteDbVersion;//远端数据库
 //    private int localDbVersion;//本地数据库
     private String databaseExtraUrl = "https://gitee.com/nj005py/fgocalc/raw/master/servants.db";
     //本地版本号
@@ -82,45 +89,12 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     private boolean isReceiverRegister = false;
     private boolean isExtra = false;//是否加载外置数据库
     private boolean isReload = false;//是否重载数据库
-    private boolean isManual = false;//是否手动检测更新
+//    private boolean isManual = false;//是否手动检测更新
     private LoadingDialog loadingDialog;
 
     private int DB_ERROR = 0;//0 ok,1 permission,2 error
 
     private final int CHECK_APP_UPDATE = 1;//检查更新完毕
-
-//    private Handler mHandler = new Handler(new Handler.Callback() {
-//        @Override
-//        public boolean handleMessage(Message msg) {
-//            switch (msg.what) {
-//                case CHECK_APP_UPDATE:
-//                    if ((msg.obj != null) && (msg.obj instanceof  UpdateItem)) {
-//                        UpdateItem updateItem = (UpdateItem)msg.obj;
-//                        remoteVersion = updateItem.getVersionCode();
-//                        if (remoteVersion != 0 && localVersion != 0) {
-//                            //判断当前版本是否是忽略版本
-//                            ignoreVersion = (int) SharedPreferencesUtils.getParam(ctx, "ignVersion", 0);
-//                            if (ignoreVersion != remoteVersion) {
-//                                //比较版本号
-//                                if (remoteVersion > localVersion) {
-//                                    //升级弹框
-//                                    mView.showUpdateDiag(updateItem);
-//                                } else {
-//                                    if (isManual) {
-//                                        isManual = false;
-//                                        ToolCase.showTip(ctx, "tip_app_already_lastest.json");
-//                                    }
-//                                }
-//                            }
-//                        }
-//                    }
-//                    break;
-//            }
-//            return true;
-//        }
-//    });
-    //更新检查用
-    ExecutorService executor = Executors.newCachedThreadPool();
 
     @NonNull
     private final ServantListContract.View mView;
@@ -187,6 +161,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     }
 
     //用来监听下载事件的
+    //下载完成
     BroadcastReceiver receiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -214,6 +189,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
         getAllServants();
     }
 
+    //加载数据库
     @Override
     public void loadDatabaseExtra() {
         File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
@@ -233,74 +209,67 @@ public class ServantListPresenter implements ServantListContract.Presenter {
          * 4下载数据库
          * 5加载数据库
          */
-//        //1 获取本地数据库版本
-//        int locVer = (int) SharedPreferencesUtils.getParam(ctx, "dbVersion", 0);
-//        //2
-//        String remote = (String) SharedPreferencesUtils.getParam(ctx, "remoteDb", "");
-//        //3 判断本地与远端数据库版本号
-//        if (locVer != 0 && !TextUtils.isEmpty(remote)) {
-//            int remoteVer = Integer.valueOf(remote);
-//            if (remoteVer > locVer) {
-//                File configFile = new File(Environment.getExternalStoragePublicDirectory("Download") + "/servants.db");
-//                if (configFile.exists()) {
-//                    configFile.delete();
-//                    Log.d(TAG, "数据库文件存在，删除配置文件");
-//                }
-//                //注册广播接收器
-//                IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-//                ctx.registerReceiver(receiver, filter);
-//                isReceiverRegister = true;
-//                //创建下载任务,downloadUrl就是下载链接
-//                DownloadManager.Request request = new DownloadManager.Request(Uri.parse(databaseExtraUrl));
-//                //指定下载路径和下载文件名
-//                request.setDestinationInExternalPublicDir("Download", "/servants.db");
-//                //获取下载管理器
-//                DownloadManager downloadManager = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
-//                //将下载任务加入下载队列，否则不会进行下载
-//                downloadManager.enqueue(request);
-//            } else {
-//                ToolCase.showTip(ctx, "tip_database_already_lastest.json");
-//            }
-//        } else {
-//            ToolCase.showTip(ctx, "tip_database_already_lastest.json");
-//        }
         handleDbUpdate();
     }
 
     //检查数据库版本
     public void handleDbUpdate() {
-        Future<RemoteVersionItem> future = getRemoteVersionItem();
-        int localDbVersion = getDbVersion();
-        RemoteVersionItem remoteVersionItem = null;
-        try {
-            remoteVersionItem = future.get();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        int remoteDbVersion = remoteVersionItem.getDb();
-        if (remoteDbVersion > localDbVersion) {
-            File configFile = new File(Environment.getExternalStoragePublicDirectory("Download") + "/servants.db");
-            if (configFile.exists()) {
-                configFile.delete();
-                Log.d(TAG, "数据库文件存在，删除配置文件");
+        Flowable.create(new FlowableOnSubscribe<RemoteVersionItem>() {
+            @Override
+            public void subscribe(@io.reactivex.annotations.NonNull FlowableEmitter<RemoteVersionItem> e) throws Exception {
+                RemoteVersionItem item = getRemoteVersionItem();
+                e.onNext(item);
+                e.onComplete();
             }
-            //注册广播接收器
-            IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
-            ctx.registerReceiver(receiver, filter);
-            isReceiverRegister = true;
-            //创建下载任务,downloadUrl就是下载链接
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(databaseExtraUrl));
-            //指定下载路径和下载文件名
-            request.setDestinationInExternalPublicDir("Download", "/servants.db");
-            //获取下载管理器
-            DownloadManager downloadManager = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
-            //将下载任务加入下载队列，否则不会进行下载
-            downloadManager.enqueue(request);
-        } else {
-            ToolCase.showTip(ctx, "tip_database_already_lastest.json");
-        }
+        },BackpressureStrategy.BUFFER)
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new FlowableSubscriber<RemoteVersionItem>() {
+                    @Override
+                    public void onSubscribe(@io.reactivex.annotations.NonNull Subscription s) {
+                        s.request(Long.MAX_VALUE);
+                    }
+
+                    @Override
+                    public void onNext(RemoteVersionItem item) {
+                        int localDbVersion = getDbVersion();
+                        if (item == null) {
+                            return;
+                        }
+                        int remoteDbVersion = item.getDb();
+                        if (remoteDbVersion > localDbVersion) {
+                            File configFile = new File(Environment.getExternalStoragePublicDirectory("Download") + "/servants.db");
+                            if (configFile.exists()) {
+                                configFile.delete();
+                                Log.d(TAG, "数据库文件存在，删除配置文件");
+                            }
+                            //注册广播接收器
+                            IntentFilter filter = new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE);
+                            ctx.registerReceiver(receiver, filter);
+                            isReceiverRegister = true;
+                            //创建下载任务,downloadUrl就是下载链接
+                            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(databaseExtraUrl));
+                            //指定下载路径和下载文件名
+                            request.setDestinationInExternalPublicDir("Download", "/servants.db");
+                            //获取下载管理器
+                            DownloadManager downloadManager = (DownloadManager) ctx.getSystemService(Context.DOWNLOAD_SERVICE);
+                            //将下载任务加入下载队列，否则不会进行下载
+                            downloadManager.enqueue(request);
+                        } else {
+                            ToolCase.showTip(ctx, "tip_database_already_lastest.json");
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
 
     }
 
@@ -319,7 +288,6 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     }
 
 
-
     //获取app的版本号
     @Override
     public String getVersion() {
@@ -334,10 +302,10 @@ public class ServantListPresenter implements ServantListContract.Presenter {
         }
     }
 
-    private int getVersionCode(){
+    private int getVersionCode() {
         try {
             PackageManager manager = ctx.getPackageManager();
-            PackageInfo info = manager.getPackageInfo(ctx.getPackageName(),0);
+            PackageInfo info = manager.getPackageInfo(ctx.getPackageName(), 0);
             int code = info.versionCode;
             return code;
         } catch (Exception e) {
@@ -349,13 +317,13 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     //获取本地db版本
     private int getDbVersion() {
         //获取配置文件
-        String json = ToolCase.loadJsonFromAsset(ctx,"database.json");
+        String json = ToolCase.loadJsonFromAsset(ctx, "database.json");
         int remoteDbVersion = 0;
         //json解析
         try {
             JSONObject jo = new JSONObject(json);
             //获取当前版本号
-            remoteDbVersion = jo.optInt("version",0);
+            remoteDbVersion = jo.optInt("version", 0);
         } catch (JSONException e) {
             e.printStackTrace();
         }
@@ -364,7 +332,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
 
     @Override
     public void checkAppUpdate(boolean isManual) {
-        this.isManual = isManual;
+//        this.isManual = isManual;
         //判断网络是否可用
         if (BaseUtils.isNetworkAvailable(ctx)) {
             handleAppUpdate();
@@ -372,54 +340,70 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     }
 
     //获取远端版本信息
-    private Future<RemoteVersionItem> getRemoteVersionItem() {
-
+    private RemoteVersionItem getRemoteVersionItem() {
         Document doc = ToolCase.getDocument(UrlConstant.APP_UPDATE);
         if (doc == null) {
-            Log.d(TAG,"更新文件获取失败");
+            Log.d(TAG, "更新文件获取失败");
         }
         String json = doc.text();
         Gson gson = new Gson();
-        Type type = (new TypeToken<RemoteVersionItem>(){}).getType();
-        final RemoteVersionItem item = gson.fromJson(json,type);
-        Future<RemoteVersionItem> future = executor.submit(new Callable<RemoteVersionItem>() {
-            @Override
-            public RemoteVersionItem call() throws Exception {
-                return item;
-            }
-        });
-        return future;
+        Type type = (new TypeToken<RemoteVersionItem>() {
+        }).getType();
+        final RemoteVersionItem item = gson.fromJson(json, type);
+        return item;
     }
 
     //检查app更新
     private void handleAppUpdate() {
-        Future<RemoteVersionItem> future = getRemoteVersionItem();
-        int localVersion = getVersionCode();
-        RemoteVersionItem remoteVersionItem = null;
-        try {
-            remoteVersionItem = future.get();
-        } catch (ExecutionException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        int remoteVersion = remoteVersionItem.getVersionCode();
-        if (remoteVersion != 0 && localVersion != 0) {
-            //判断当前版本是否是忽略版本
-            int ignoreVersion = (int) SharedPreferencesUtils.getParam(ctx, "ignVersion", 0);
-            if (ignoreVersion != remoteVersion) {
-                //比较版本号
-                if (remoteVersion > localVersion) {
-                    //升级弹框
-                    mView.showUpdateDiag(remoteVersionItem);
-                } else {
-//                    if (isManual) {
-//                        isManual = false;
-//                    }
-                    ToolCase.showTip(ctx, "tip_app_already_lastest.json");
-                }
+        //使用rxJava2
+        Flowable.create(new FlowableOnSubscribe<RemoteVersionItem>() {
+            @Override
+            public void subscribe(@io.reactivex.annotations.NonNull FlowableEmitter<RemoteVersionItem> e) throws Exception {
+                RemoteVersionItem item = getRemoteVersionItem();
+                e.onNext(item);
+                e.onComplete();
             }
-        }
+        }, BackpressureStrategy.BUFFER)
+                .subscribeOn(Schedulers.newThread())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(new FlowableSubscriber<RemoteVersionItem>() {
+                    @Override
+                    public void onSubscribe(@io.reactivex.annotations.NonNull Subscription s) {
+                        s.request(Long.MAX_VALUE);
+                    }
+
+                    @Override
+                    public void onNext(RemoteVersionItem item) {
+                        int localVersion = getVersionCode();
+                        if (item == null) {
+                            return;
+                        }
+                        int remoteVersion = item.getVersionCode();
+                        if (remoteVersion != 0 && localVersion != 0) {
+                            //判断当前版本是否是忽略版本
+                            int ignoreVersion = (int) SharedPreferencesUtils.getParam(ctx, "ignVersion", 0);
+                            if (ignoreVersion != remoteVersion) {
+                                //比较版本号
+                                if (remoteVersion > localVersion) {
+                                    //升级弹框
+                                    mView.showUpdateDiag(item);
+                                } else {
+                                    ToolCase.showTip(ctx, "tip_app_already_lastest.json");
+                                }
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void onError(Throwable t) {
+
+                    }
+
+                    @Override
+                    public void onComplete() {
+
+                    }
+                });
     }
 
     @Override
@@ -438,13 +422,13 @@ public class ServantListPresenter implements ServantListContract.Presenter {
         String[] npColorValue = ctx.getResources().getStringArray(R.array.np_color_value);
 
         List<FilterItem> list = new ArrayList<>();
-        list.add(new FilterItem("职阶",classType,classType));
-        list.add(new FilterItem("星数",starNum,starValue,1));
-        list.add(new FilterItem("阵营",attribute,attributeValue,1));
-        list.add(new FilterItem("排序",orderType,orderTypeValue));
-        list.add(new FilterItem("特性",traits,traits));
-        list.add(new FilterItem("宝具卡色",npColor,npColorValue));
-        list.add(new FilterItem("宝具类型",npClassification,npClassificationValue));
+        list.add(new FilterItem("职阶", classType, classType));
+        list.add(new FilterItem("星数", starNum, starValue, 1));
+        list.add(new FilterItem("阵营", attribute, attributeValue, 1));
+        list.add(new FilterItem("排序", orderType, orderTypeValue));
+        list.add(new FilterItem("特性", traits, traits));
+        list.add(new FilterItem("宝具卡色", npColor, npColorValue));
+        list.add(new FilterItem("宝具类型", npClassification, npClassificationValue));
 
         return list;
     }
@@ -520,21 +504,21 @@ public class ServantListPresenter implements ServantListContract.Presenter {
 
     @Override
     public void follow() {
-        ToolCase.showTip(ctx,"tip_blue.json");
+        ToolCase.showTip(ctx, "tip_blue.json");
     }
 
     @Override
     public void goParty() {
-        Intent i = new Intent(ctx,PartyActy.class);
+        Intent i = new Intent(ctx, PartyActy.class);
         if (servantList != null) {
-            i.putExtra("servants",(Serializable) servantList);
+            i.putExtra("servants", (Serializable) servantList);
         }
         acty.startActivity(i);
     }
 
     @Override
     public void qq() {
-        ToolCase.copy2ClipboardCharacter(ctx,"422969398","QQ群号已复制剪切板，快去加群吧！");
+        ToolCase.copy2ClipboardCharacter(ctx, "422969398", "QQ群号已复制剪切板，快去加群吧！");
     }
 
     public ArrayList<ServantItem> getServants(Cursor cur) {
@@ -680,7 +664,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
                 if (isReload) {
                     ToolCase.showTip(ctx, "tip_database_reload_success.json");
                 }
-            }else{
+            } else {
                 TipItem tItem = new TipItem();
                 servantItems = null;
                 if (DB_ERROR == 1) {
@@ -1016,9 +1000,9 @@ public class ServantListPresenter implements ServantListContract.Presenter {
                     //收官排序
                     if (ifMultiAtk) {
                         sql += " ORDER BY CAST( new_atk AS SIGNED)" + order[1];
-                    }else if (ifMultiNpcArts || ifMultiNpcQuick) {
+                    } else if (ifMultiNpcArts || ifMultiNpcQuick) {
                         sql += " ORDER BY CAST( new_npc AS SIGNED)" + order[1];
-                    }else {
+                    } else {
                         sql += " ORDER BY CAST(" + order[0] + " AS SIGNED)" + order[1];
                     }
                     //使用sql

@@ -5,6 +5,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
 import android.text.Html;
+import android.view.LayoutInflater;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.CheckBox;
@@ -17,6 +18,7 @@ import org.phantancy.fgocalc.item.RemoteVersionItem;
 import org.phantancy.fgocalc.item.UpdateItem;
 
 import butterknife.BindView;
+import butterknife.ButterKnife;
 
 /**
  * Created by HATTER on 2017/8/8.
@@ -37,7 +39,9 @@ public class UpdateDialog extends Dialog{
 
     public UpdateDialog(@NonNull Context context) {
         super(context, R.style.dialog);
-        setContentView(R.layout.diag_update);
+        View view = LayoutInflater.from(context).inflate(R.layout.diag_update,null,false);
+        setContentView(view);
+        ButterKnife.bind(view);
         mContext = context;
         duTvCancel.setOnClickListener(new View.OnClickListener() {
             @Override
