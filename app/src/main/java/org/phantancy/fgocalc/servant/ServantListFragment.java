@@ -346,9 +346,48 @@ public class ServantListFragment extends BaseFrag implements
                     case R.id.nsm_follow:
                         mPresenter.follow();
                         break;
-//                    case R.id.nsm_party:
-//                        mPresenter.goParty();
-//                        break;
+                    //功能测试
+                    case R.id.nsm_any:
+                        //弹窗
+                        DisplayMetrics metrics = new DisplayMetrics();
+                        mActy.getWindowManager().getDefaultDisplay().getMetrics(metrics);
+                        int width = metrics.widthPixels;
+                        int height = metrics.heightPixels;
+//
+                        CharacterDialog cd = new CharacterDialog(ctx);
+                        cd.getWindow().setLayout((int) (width * 1), (int) (height * 0.8));
+
+                        //内容
+                        CharacterEntity en = new CharacterEntity();
+                        en.img = R.drawable.fg_arcueid;
+                        en.content = "测试功能";
+                        //选项-取消
+                        CharacterEntity.OptionEntity opCancel = new CharacterEntity.OptionEntity();
+                        opCancel.text = "取消";
+                        opCancel.characterInterface = new CharacterEntity.CharacterInterface() {
+                            @Override
+                            public void onClick() {
+
+                            }
+                        };
+                        //选项-看看
+                        CharacterEntity.OptionEntity opDownload = new CharacterEntity.OptionEntity();
+                        opDownload.text = "让我康康";
+                        opDownload.characterInterface = new CharacterEntity.CharacterInterface() {
+                            @Override
+                            public void onClick() {
+                            }
+                        };
+                        //添加选项
+                        List<CharacterEntity.OptionEntity> ops = new ArrayList<>();
+                        ops.add(opCancel);
+                        ops.add(opDownload);
+                        //设置选项
+                        en.options = ops;
+                        //设置弹窗
+                        cd.setEntity(en);
+                        cd.show();
+                        break;
                     case R.id.nsm_metaphysics:
                         intent.setClass(ctx, MetaphysicsActy.class);
                         startActivity(intent);

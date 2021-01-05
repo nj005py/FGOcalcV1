@@ -89,7 +89,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     private boolean isReceiverRegister = false;
     private boolean isExtra = false;//是否加载外置数据库
     private boolean isReload = false;//是否重载数据库
-//    private boolean isManual = false;//是否手动检测更新
+    //    private boolean isManual = false;//是否手动检测更新
     private LoadingDialog loadingDialog;
 
     private int DB_ERROR = 0;//0 ok,1 permission,2 error
@@ -221,7 +221,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
                 e.onNext(item);
                 e.onComplete();
             }
-        },BackpressureStrategy.BUFFER)
+        }, BackpressureStrategy.BUFFER)
                 .subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new FlowableSubscriber<RemoteVersionItem>() {
@@ -331,11 +331,11 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     }
 
     @Override
-    public void checkAppUpdate(boolean isManual) {
+    public void checkAppUpdate(boolean isForcePopup) {
 //        this.isManual = isManual;
         //判断网络是否可用
         if (BaseUtils.isNetworkAvailable(ctx)) {
-            handleAppUpdate();
+            handleAppUpdate(isForcePopup);
         }
     }
 
@@ -354,7 +354,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     }
 
     //检查app更新
-    private void handleAppUpdate() {
+    private void handleAppUpdate(final boolean isForcePopup) {
         //使用rxJava2
         Flowable.create(new FlowableOnSubscribe<RemoteVersionItem>() {
             @Override
@@ -374,22 +374,34 @@ public class ServantListPresenter implements ServantListContract.Presenter {
 
                     @Override
                     public void onNext(RemoteVersionItem item) {
+                        /**
+                         * 需要弹窗的场景：
+                         *
+                         * 首次发现新版本
+                         * 手动检测新版本，无视已忽略
+                         *
+                         * 不需要弹窗的场景：
+                         *
+                         * app已经是远端版本
+                         * 远端版本已忽略
+                         *
+                         */
+                        //本地版本
                         int localVersion = getVersionCode();
                         if (item == null) {
                             return;
                         }
+                        //远端版本
                         int remoteVersion = item.getVersionCode();
                         if (remoteVersion != 0 && localVersion != 0) {
-                            //判断当前版本是否是忽略版本
                             int ignoreVersion = (int) SharedPreferencesUtils.getParam(ctx, "ignVersion", 0);
-                            if (ignoreVersion != remoteVersion) {
-                                //比较版本号
-                                if (remoteVersion > localVersion) {
-                                    //升级弹框
-                                    mView.showUpdateDiag(item);
-                                } else {
-                                    ToolCase.showTip(ctx, "tip_app_already_lastest.json");
-                                }
+                            //判断当前版本是否是忽略版本
+                            if ((ignoreVersion != remoteVersion) && (remoteVersion > localVersion)) {
+                                mView.showUpdateDiag(item);
+                            }
+
+                            if (isForcePopup && ( remoteVersion == localVersion)) {
+                                ToolCase.showTip(ctx, "tip_app_already_lastest.json");
                             }
                         }
                     }

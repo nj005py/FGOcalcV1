@@ -44,7 +44,7 @@ public interface ServantListContract {
         void goParty();
         void qq();
         List<FilterItem> getFilterItems();
-        void checkAppUpdate(boolean isManual);
+        void checkAppUpdate(boolean isForcePopup);
     }
 
 }
