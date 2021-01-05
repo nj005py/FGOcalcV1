@@ -3,11 +3,11 @@ package org.phantancy.fgocalc.entity;
 import java.io.Serializable;
 import java.util.List;
 
-public class CharacterEntity implements Serializable {
+public class CharacterEntity<T> implements Serializable {
     //文字内容
     public String content = null;
     //立绘
-    public int img = -1;
+    public T img = null;
     //选项
     public List<OptionEntity> options = null;
 

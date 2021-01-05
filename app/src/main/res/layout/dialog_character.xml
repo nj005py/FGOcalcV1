@@ -5,33 +5,34 @@
 
     <ImageView
         android:id="@+id/iv_character"
-        android:layout_width="match_parent"
-        android:layout_height="500dp"
-        android:src="@drawable/fg_arcueid"
+        android:layout_width="wrap_content"
+        android:layout_height="480dp"
         android:scaleType="fitCenter"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintBottom_toTopOf="@+id/sv_tip"
+        android:src="@drawable/altria_a"
         android:visibility="visible"/>
 
     <View
+        android:id="@+id/v_bg"
         android:layout_width="match_parent"
         android:layout_height="100dp"
         android:background="@drawable/chat_bg"
         android:alpha="0.8"
         app:layout_constraintTop_toTopOf="@id/sv_tip"
         app:layout_constraintBottom_toBottomOf="@id/sv_tip"
+        android:visibility="visible"
         />
 
     <ScrollView
         android:id="@+id/sv_tip"
         android:layout_width="match_parent"
         android:layout_height="100dp"
-        app:layout_constraintBottom_toBottomOf="@+id/iv_character"
+        app:layout_constraintTop_toBottomOf="@+id/iv_character"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-
         android:visibility="visible">
 
         <TextView
@@ -50,9 +51,9 @@
     <android.support.v7.widget.RecyclerView
         android:id="@+id/rv_options"
         android:layout_width="0dp"
-        android:layout_height="match_parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintTop_toTopOf="@+id/iv_character"
+        app:layout_constraintBottom_toTopOf="@+id/sv_tip"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         android:visibility="visible"

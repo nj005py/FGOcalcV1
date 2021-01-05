@@ -4,6 +4,8 @@ import android.Manifest;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Path;
 import android.net.Uri;
@@ -337,7 +339,7 @@ public class ServantListFragment extends BaseFrag implements
         });
         fslNvMenu.setNavigationItemSelectedListener(new NavigationView.OnNavigationItemSelectedListener() {
             @Override
-            public boolean onNavigationItemSelected(@NonNull MenuItem item) {
+            public boolean onNavigationItemSelected(@NonNull final MenuItem item) {
                 Intent intent = new Intent();
                 switch (item.getItemId()) {
                     case R.id.nsm_about:
@@ -354,12 +356,17 @@ public class ServantListFragment extends BaseFrag implements
                         int width = metrics.widthPixels;
                         int height = metrics.heightPixels;
 //
-                        CharacterDialog cd = new CharacterDialog(ctx);
+                        final CharacterDialog cd = new CharacterDialog(ctx);
                         cd.getWindow().setLayout((int) (width * 1), (int) (height * 0.8));
 
                         //内容
                         CharacterEntity en = new CharacterEntity();
-                        en.img = R.drawable.fg_arcueid;
+                        //测试bitmap
+                        Bitmap bmpArcueId = BitmapFactory.decodeResource(getResources(), R.drawable.fg_arcueid, null);
+                        bmpArcueId = Bitmap.createBitmap(bmpArcueId,0, 0,bmpArcueId.getWidth(), (int)(bmpArcueId.getHeight() * 0.55) );
+                        //测试resId
+                        int resId = R.drawable.altria_x_a;
+                        en.img = bmpArcueId;
                         en.content = "测试功能";
                         //选项-取消
                         CharacterEntity.OptionEntity opCancel = new CharacterEntity.OptionEntity();
@@ -367,7 +374,7 @@ public class ServantListFragment extends BaseFrag implements
                         opCancel.characterInterface = new CharacterEntity.CharacterInterface() {
                             @Override
                             public void onClick() {
-
+                                cd.dismiss();
                             }
                         };
                         //选项-看看
@@ -376,6 +383,7 @@ public class ServantListFragment extends BaseFrag implements
                         opDownload.characterInterface = new CharacterEntity.CharacterInterface() {
                             @Override
                             public void onClick() {
+                                cd.dismiss();
                             }
                         };
                         //添加选项
