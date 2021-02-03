@@ -181,7 +181,8 @@ public class ServantListPresenter implements ServantListContract.Presenter {
 
     @Override
     public void reloadDatabase() {
-        File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
+//        File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
+        File dbFile = ctx.getDatabasePath(DBManager.DB_NAME);
         if (dbFile.exists()) {
             dbFile.delete();
         }
@@ -192,7 +193,8 @@ public class ServantListPresenter implements ServantListContract.Presenter {
     //加载数据库
     @Override
     public void loadDatabaseExtra() {
-        File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
+//        File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
+        File dbFile = ctx.getDatabasePath(DBManager.DB_NAME);
         if (dbFile.exists()) {
             dbFile.delete();
         }
@@ -281,7 +283,8 @@ public class ServantListPresenter implements ServantListContract.Presenter {
         int jsonVersion = getDbVersion();
         if (lastVersion > jsonVersion) {
             SharedPreferencesUtils.setParam(ctx, "dbVersion", jsonVersion);
-            File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
+//            File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
+            File dbFile = ctx.getDatabasePath(DBManager.DB_NAME);
             dbFile.delete();
             ToolCase.showTip(ctx, "tip_database_update_success.json");
         }

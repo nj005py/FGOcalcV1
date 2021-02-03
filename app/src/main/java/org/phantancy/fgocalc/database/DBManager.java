@@ -25,9 +25,9 @@ public class DBManager {
     private final int BUFFER_SIZE = 400000;
     public static final String DB_NAME = "servants.db"; //保存的数据库文件名
     public static final String PACKAGE_NAME = "org.phantancy.fgocalc";
-    public static final String DB_PATH = "/data"
-            + Environment.getDataDirectory().getAbsolutePath() + "/"
-            + PACKAGE_NAME;  //在手机里存放数据库的位置
+//    public static final String DB_PATH = "/data"
+//            + Environment.getDataDirectory().getAbsolutePath() + "/"
+//            + PACKAGE_NAME;  //在手机里存放数据库的位置
     private Context ctx;
     public SQLiteDatabase database;
 
@@ -55,9 +55,11 @@ public class DBManager {
     }
 
     public SQLiteDatabase openDatabase() {
-        String dbfile = DB_PATH + "/" + DB_NAME;
+//        String dbfile = DB_PATH + "/" + DB_NAME;
+        File dbfile = ctx.getDatabasePath(DB_NAME);
         try {
-            if (!(new File(dbfile).exists())) {//判断数据库文件是否存在，若不存在则执行导入，否则直接打开数据库
+//            if (!(new File(dbfile).exists())) {//判断数据库文件是否存在，若不存在则执行导入，否则直接打开数据库
+            if (!dbfile.exists()) {//判断数据库文件是否存在，若不存在则执行导入，否则直接打开数据库
                 InputStream is = ctx.getResources().openRawResource(
                         R.raw.servants); //欲导入的数据库
                 FileOutputStream fos = new FileOutputStream(dbfile);
@@ -83,10 +85,12 @@ public class DBManager {
     }
 
     public SQLiteDatabase openDatabaseExtra(){
-        String dbfile = DB_PATH + "/" + DB_NAME;
+//        String dbfile = DB_PATH + "/" + DB_NAME;
+        File dbfile = ctx.getDatabasePath(DB_NAME);
+
         String extra = Environment.getExternalStoragePublicDirectory("Download") + "/servants.db";
         try {
-            if (!(new File(dbfile).exists())) {//判断数据库文件是否存在，若不存在则执行导入，否则直接打开数据库
+            if (!dbfile.exists()) {//判断数据库文件是否存在，若不存在则执行导入，否则直接打开数据库
                 File dbExtra = new File(extra);
                 if (dbExtra.exists()) {
                     InputStream is = new FileInputStream(dbExtra); //欲导入的数据库
