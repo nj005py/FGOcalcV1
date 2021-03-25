@@ -94,16 +94,13 @@ public class InfoAdapter extends RecyclerView.Adapter<InfoAdapter.ViewHolder> {
                         Bitmap bmp = ToolCase.base642Bitmap(item.getPic());
                         ivInfo.setImageBitmap(bmp);
                     }else{
-                        String num = "";
-                        if (item.getId() > 0 && item.getId() < 10) {
-                            num = new StringBuilder().append("00").append(item.getId()).toString();
-                        }else if (item.getId() >= 10 && item.getId() < 100) {
-                            num = new StringBuilder().append("0").append(item.getId()).toString();
-                        }else{
-                            num = new StringBuilder().append(item.getId()).toString();
-                        }
+                        String num = String.format("%03d",item.getId());
                         //从fgowiki获取头像
-                        String url = new StringBuilder().append(avatarUrl).append(num).append(".jpg").toString();
+                        String url = new StringBuilder()
+                                .append("https://gitee.com/nj005py/fgocalc/raw/master/svt/image")
+                                .append(num)
+                                .append(".webp")
+                                .toString();
                         GlideApp.with(ctx)
                                 .load(url)
                                 .placeholder(R.drawable.loading)

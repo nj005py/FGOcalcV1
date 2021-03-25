@@ -57,7 +57,7 @@ public class ServantCardViewAdapter extends RecyclerView.Adapter<ServantCardView
 
     static class ViewHolder extends RecyclerView.ViewHolder {
         ImageView iv;
-        TextView tvId, tvIdBg, tvNpClassification,tvNpClassificationBg;
+        TextView tvId, tvIdBg, tvNpClassification, tvNpClassificationBg;
         TextView tvAtk;
         TextView tvHp;
         ConstraintLayout cv;
@@ -198,7 +198,7 @@ public class ServantCardViewAdapter extends RecyclerView.Adapter<ServantCardView
         } else {
             ivAvatar.setImageDrawable(defaultDrawable);
             //否则从网络获取图片
-            String strNum = String.format("%03d",id);
+            String strNum = String.format("%03d", id);
             //从fgowiki获取头像
             String url = new StringBuilder().append(avatarUrl).append(strNum).append(".jpg").toString();
             GlideApp.with(ctx)
@@ -265,7 +265,7 @@ public class ServantCardViewAdapter extends RecyclerView.Adapter<ServantCardView
             tvNpClassificationBg.setTextColor(ContextCompat.getColor(ctx, R.color.colorBlack));
             tvNpClassification.setVisibility(View.VISIBLE);
             tvNpClassificationBg.setVisibility(View.VISIBLE);
-        }else{
+        } else {
             tvNpClassification.setVisibility(View.GONE);
             tvNpClassificationBg.setVisibility(View.GONE);
         }
@@ -278,8 +278,8 @@ public class ServantCardViewAdapter extends RecyclerView.Adapter<ServantCardView
                 if (999 > item.getId()) {
                     Intent sIntent = new Intent(ctx, CalcActy.class);
                     sIntent.putExtra("servants", item);
-                    ActivityOptionsCompat actyOptions = ActivityOptionsCompat.makeSceneTransitionAnimation(acty,(View)ivAvatar,"avatar");
-                    ctx.startActivity(sIntent,actyOptions.toBundle());
+                    ActivityOptionsCompat actyOptions = ActivityOptionsCompat.makeSceneTransitionAnimation(acty, (View) ivAvatar, "avatar");
+                    ctx.startActivity(sIntent, actyOptions.toBundle());
                     acty.overridePendingTransition(R.anim.zoom_in, 0);
                 } else {
                     switch (id) {
@@ -337,16 +337,13 @@ public class ServantCardViewAdapter extends RecyclerView.Adapter<ServantCardView
                     getDatabasePic.execute();
                 } else {
                     //否则从网络获取图片
-                    String strNum = "";
-                    if (id > 0 && id < 10) {
-                        strNum = new StringBuilder().append("00").append(id).toString();
-                    } else if (id >= 10 && id < 100) {
-                        strNum = new StringBuilder().append("0").append(id).toString();
-                    } else {
-                        strNum = new StringBuilder().append(id).toString();
-                    }
+                    String strNum = String.format("%03d",id);
                     //从fgowiki获取头像
-                    String url = new StringBuilder().append("http://file.fgowiki.fgowiki.com/fgo/head/").append(strNum).append(".jpg").toString();
+                    String url = new StringBuilder()
+                            .append("https://gitee.com/nj005py/fgocalc/raw/master/svt/image")
+                            .append(strNum)
+                            .append(".webp")
+                            .toString();
                     GetNetImage getNetImage = new GetNetImage(ctx, id, ivAvatar, url);
                     getNetImage.execute();
                 }

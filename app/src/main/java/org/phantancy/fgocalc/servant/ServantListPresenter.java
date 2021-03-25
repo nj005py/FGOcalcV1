@@ -281,7 +281,7 @@ public class ServantListPresenter implements ServantListContract.Presenter {
         int lastVersion = (int) SharedPreferencesUtils.getParam(ctx, "dbVersion", 1);
         //json存的文件版本
         int jsonVersion = getDbVersion();
-        if (lastVersion > jsonVersion) {
+        if (lastVersion < jsonVersion) {
             SharedPreferencesUtils.setParam(ctx, "dbVersion", jsonVersion);
 //            File dbFile = new File(DBManager.DB_PATH + "/" + DBManager.DB_NAME);
             File dbFile = ctx.getDatabasePath(DBManager.DB_NAME);
